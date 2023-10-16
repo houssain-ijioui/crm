@@ -27,3 +27,5 @@ py manage.py makemigrations
 py manage.py migrate
 py manage.py runserver
 
+- youtube demo: https://youtu.be/i_ydM6a82lo
+
