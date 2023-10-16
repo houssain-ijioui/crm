@@ -1,0 +1,303 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+
+{% block body %}
+
+{% include 'app/navbar.html' %}
+
+<script>
+	document.addEventListener('DOMContentLoaded', () => {
+		document.querySelector('.create-customer').style.display = 'none';
+		document.querySelector('.place-order').style.display = 'none';
+		document.querySelector('.update-order').style.display = 'none';
+
+		document.querySelector("#create-customer").addEventListener('click', function() {
+			document.querySelector('#bar').style.display = 'none';
+			document.querySelector('#data').style.display = 'none';
+			document.querySelector('.create-customer').style.display = 'block';
+		})
+		document.querySelector("#place-order").addEventListener('click', function() {
+			document.querySelector('#bar').style.display = 'none';
+			document.querySelector('#data').style.display = 'none';
+			document.querySelector('.place-order').style.display = 'block';
+		})
+	})
+
+	function updateOrder(id) {
+		document.querySelector('#bar').style.display = 'none';
+		document.querySelector('#data').style.display = 'none';
+		document.querySelector('.create-customer').style.display = 'none';
+		document.querySelector('.update-order').style.display = 'block';
+
+		fetch(`order/${id}`)
+			.then(response => response.json())
+			.then(order => {
+				// preselect product option
+				[].forEach.call( document.querySelector('#select-product'), function (elem) {
+					if (elem.innerText === order.product) {
+						elem.setAttribute('selected', true)
+					}
+				})
+
+				// preselect customers
+				const customerOptions = document.querySelector('#select-customer').options;
+
+				for(var optionIndex = 0; optionIndex < customerOptions.length; optionIndex++) {
+					if (customerOptions[optionIndex].innerText === order.customer) {
+						customerOptions[optionIndex].setAttribute('selected', true);
+					}
+				}
+
+				// preselect status
+				const statusOptions = document.querySelector('#status-select').options;
+
+				for(var optionIndex = 0; optionIndex < statusOptions.length; optionIndex++) {
+					if (statusOptions[optionIndex].innerText === order.status) {
+						statusOptions[optionIndex].setAttribute('selected', true);
+					}
+				}
+
+				document.querySelector('#update-order-form').action = `order/${id}`
+				
+			})
+	}
+</script>
+
+	{% if messages %}
+		{% for message in messages %}
+			<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+				<strong>{{ message }}</strong>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+		{% endfor %}
+	{% endif %}
+
+<br>
+
+<div class="row" id="bar">
+	<div class="col">
+		<div class="col-md">
+			<div class="card text-center text-white mb-3 bg-primary" id="total-orders">
+			  	<div class="card-header">
+			  		<h5 class="card-title">Total Orders</h5>
+			  	</div>
+			  	<div class="card-body">
+			    	<h3 class="card-title">{{ orders.count }}</h3>
+			  	</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col">
+		<div class="col-md">
+			<div class="card text-center text-white  mb-3 bg-success" id="orders-delivered">
+			  	<div class="card-header">
+			  		<h5 class="card-title">Orders Delivered</h5>
+			  	</div>
+			  	<div class="card-body">
+			    	<h3 class="card-title">{{ orders_delivered }} </h3>
+			  	</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col">
+		<div class="col-md">
+			<div class="card text-center text-white  mb-3 bg-warning" id="orders-pending">
+			  	<div class="card-header">
+			  		<h5 class="card-title">Orders Pending</h5>
+			  	</div>
+			  	<div class="card-body">
+			    	<h3 class="card-title">{{ orders_pending }} </h3>
+			  	</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<br>
+
+<div class="row" id="data">
+	<div class="col-md-5">
+		<h5>CUSTOMERS:</h5>
+		<hr>
+		<div class="card card-body">
+			<a class="btn btn-primary" id="create-customer">Create Customer</a>
+			<table class="table table-sm">
+				<tr>
+					<th>Customer</th>
+					<th>Phone</th>
+					<th></th>
+				</tr>
+
+				{% for customer in customers %}
+					<tr>
+						<td>{{ customer.name }}</td>
+						<td>{{ customer.phone }}</td>
+						<td><a href="{% url 'customer_page' customer.id %}" class="btn btn-info">View</a></td>
+					</tr>
+				{% endfor %}
+
+			</table>
+		</div>
+	</div>
+
+	<div class="col-md-7">
+		<h5>LAST 5 ORDERS</h5>
+		<hr>
+		<div class="card card-body">
+			<a class="btn btn-primary" id="place-order">Place Order</a>
+			<table class="table table-sm">
+				<tr>
+					<th>Product</th>
+					<th>Date Orderd</th>
+					<th>Status</th>
+					<th>Update</th>
+					<th>Remove</th>
+				</tr>
+
+				{% for order in orders %}
+					<tr>
+						<td>{{ order.product }}</td>
+						<td>{{ order.date_ordered }}</td>
+						<td id="status" class="btn">{{ order.status }}</td>
+						<td><a class="btn btn-info" onclick="updateOrder({{ order.id }})">Update</a></td>
+						<td><a class="btn btn-danger" href="{% url 'delete_order' order.id %}">Delete</a></td>
+					</tr>
+				{% endfor %}
+			</table>
+		</div>
+	</div>
+
+</div>
+
+<div class="create-customer">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-6">
+				<h3>Add Customer:</h3>
+				<div class="card card-body">
+					<form action="customer" method="POST">
+						{% csrf_token %}
+						<div class="form-group">
+							<label>Name:</label>
+							<input autocomplete="off" required type="text" name="name">
+						</div>
+						<hr>
+						<div class="form-group">
+							<label>Phone Number:</label>
+							<input autocomplete="off" required type="tel" name="phone">
+						</div>
+						<hr>
+						<div class="form-group">
+							<label>Email:</label>
+							<input autocomplete="off" required type="email" name="email">
+						</div>
+						<hr>
+						<input class="btn btn-primary" type="submit" name="Submit" value="Add">
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<div class="place-order">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-6">
+				<h3>Place Order:</h3>
+				<div class="card card-body">
+					<form action="{% url 'place_order' %}" method="POST">
+						{% csrf_token %}
+						<div class="form-group">
+							<label>Product:</label>
+							<select name="product" required>
+								<option disabled selected>Choose Product</option>
+								{% for p in products %}
+									<option value="{{ p.id }}">{{ p }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<hr>
+						<div class="form-group">
+							<label>Customer:</label>
+							<select name="customer" required>
+								<option disabled selected>Choose Customer</option>
+								{% for c in customers %}
+									<option value="{{ c.id }}">{{ c }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<hr>
+						<div class="form-group">
+							<label>Status:</label>
+							<select name="status" required>
+								<option disabled selected>Choose status</option>
+								{% for s in status %}
+									<option value="{{ s }}">{{ s }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<hr>
+						<input class="btn btn-primary" type="submit" name="Submit" value="Add">
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="update-order">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-6">
+				<h3>Update Order:</h3>
+				<div class="card card-body">
+					<form id="update-order-form" method="POST">
+						{% csrf_token %}
+						<div class="form-group">
+							<label>Product:</label>
+							<select id="select-product" name="product" required>
+								<option disabled selected>Choose Product</option>
+								{% for p in products %}
+									<option value="{{ p.id }}">{{ p }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<hr>
+						<div class="form-group">
+							<label>Customer:</label>
+							<select id="select-customer" name="customer" required>
+								<option disabled>Choose Customer</option>
+								{% for c in customers %}
+									<option  value="{{ c.id }}">{{ c }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<hr>
+						<div class="form-group">
+							<label>Status:</label>
+							<select id="status-select" name="status" required>
+								<option disabled>Choose status</option>
+								{% for s in status %}
+									<option value="{{ s }}">{{ s }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<hr>
+						<input class="btn btn-primary" type="submit" name="Submit" id="update-order-btn" value="Update">
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+    
+{% endblock %}
